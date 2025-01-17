@@ -484,7 +484,7 @@ module ActiveRecord
 
       FEATURE_NOT_SUPPORTED = '0A000' # :nodoc:
 
-      def execute_and_clear(sql, name, binds, prepare: false, async: false)
+      def execute_and_clear(sql, name, binds, prepare: false, async: false, allow_retry: true, materialize_transactions: true)
         result =
           if without_prepared_statement?(binds)
             exec_no_cache(sql, name, [])

@@ -206,6 +206,19 @@ module ActiveRecord
           end
         end
 
+        def internal_exec_query(sql, name = "SQL", binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true) # :nodoc:
+          execute_and_clear(sql, name, binds, prepare: prepare, async: async, allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |result|
+            types = {}
+            fields = result.fields
+            fields.each_with_index do |fname, i|
+              ftype = result.ftype i
+              fmod  = result.fmod i
+              types[fname] = types[i] = get_oid_type(ftype, fmod, fname)
+            end
+            build_result(columns: fields, rows: result.values, column_types: types)
+          end
+        end
+
         # Begins a transaction.
         def begin_db_transaction
           execute 'BEGIN'

@@ -213,10 +213,13 @@ module ActiveRecord
 
       # Close then reopen the connection.
       def reconnect!
-        super
-        @connection.reset
-        configure_connection
-        reload_type_map
+        begin
+          @connection&.reset
+        rescue PG::ConnectionBad
+          @connection = nil
+        end
+
+        connect unless @connection
       end
 
       def reset!

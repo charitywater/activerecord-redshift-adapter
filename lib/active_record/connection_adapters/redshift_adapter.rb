@@ -166,14 +166,21 @@ module ActiveRecord
       end
 
       # Initializes and connects a PostgreSQL adapter.
-      def initialize(connection, logger, connection_parameters, config)
-        super(connection, logger, config)
+      def initialize(config_or_deprecated_connection, deprecated_logger = nil, deprecated_connection_options = nil, deprecated_config = nil) # :nodoc:
+        super(config_or_deprecated_connection, deprecated_logger, deprecated_connection_options, deprecated_config)
 
         @visitor = Arel::Visitors::PostgreSQL.new self
         @visitor.extend(ConnectionAdapters::DetermineIfPreparableVisitor) if defined?(ConnectionAdapters::DetermineIfPreparableVisitor)
         @prepared_statements = false
 
-        @connection_parameters = connection_parameters
+        conn_params = config_or_deprecated_connection.compact
+        conn_params[:user] = conn_params.delete(:username) if conn_params[:username]
+        conn_params[:dbname] = conn_params.delete(:database) if conn_params[:database]
+
+        valid_conn_param_keys = PG::Connection.conndefaults_hash.keys + [:requiressl]
+        conn_params.slice!(*valid_conn_param_keys)
+
+        @connection_parameters = conn_params
 
         # @local_tz is initialized as nil to avoid warnings when connect tries to use it
         @local_tz = nil
@@ -181,7 +188,7 @@ module ActiveRecord
 
         connect
         @statements = StatementPool.new @connection,
-                                        self.class.type_cast_config_to_integer(config[:statement_limit])
+                                        self.class.type_cast_config_to_integer(conn_params[:statement_limit])
 
         @type_map = Type::HashLookupTypeMap.new
         initialize_type_map(type_map)

@@ -508,6 +508,10 @@ module ActiveRecord
         ret
       end
 
+      def without_prepared_statement?(binds)
+        !prepared_statements || binds.nil? || binds.empty?
+      end
+
       def exec_no_cache(sql, name, binds)
         materialize_transactions
 
